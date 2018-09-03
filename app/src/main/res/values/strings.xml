@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Rezeptebuch</string>
+    <string name="title_item_detail">Item Detail</string>
+    <string name="title_activity_navigation">NavigationActivity</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="tvCategoriy_hint">Category</string>
+    <string name="tvTitle_hint">Title</string>
+    <string name="tvDuration_hint">Duration</string>
+    <string name="tvIngredients_hint">500g Mehl \n 1 Wrf. Hefe</string>
+    <string name="tvInstructions_hint">In Schüssel geben und rühren.</string>
+</resources>
