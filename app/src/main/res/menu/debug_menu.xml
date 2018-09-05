@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/mnTest1"
+        android:title="Test1" />
+    <item
+        android:id="@+id/mnTest2"
+        android:title="Test2" />
+    <item
+        android:id="@+id/mnTest3"
+        android:title="Test3" />
+    <item
+        android:id="@+id/mnActivityList"
+        android:title="@string/lblList" />
+    <item
+        android:id="@+id/mnActivityDetail"
+        android:title="@string/lblDetailView" />
+    <item
+        android:id="@+id/mnActivityEdit"
+        android:title="@string/lblDetailEdit" />
+    <item
+        android:id="@+id/mnActivitySettings"
+        android:title="@string/lblSettings" />
+</menu>

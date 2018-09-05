@@ -13,11 +13,11 @@
         android:labelFor="@id/etTitle"
         android:text="@string/lblTitle" />
 
-    <TextView
-        android:id="@+id/tvTitle"
+    <EditText
+        android:id="@+id/etTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/lblTitle"
+        android:hint="@string/lblTitle"
         android:textSize="30sp" />
 
     <LinearLayout
@@ -46,12 +46,12 @@
                 android:labelFor="@id/etCategory"
                 android:text="@string/lblCategory" />
 
-            <TextView
-                android:id="@+id/tvCategory"
+            <EditText
+                android:id="@+id/etCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:singleLine="false"
-                android:text="@string/lblCategory"
+                android:hint="@string/lblCategory"
                 android:textSize="@dimen/default_font_size" />
 
             <TextView
@@ -61,11 +61,11 @@
                 android:labelFor="@id/etDuration"
                 android:text="@string/lblDuration" />
 
-            <TextView
-                android:id="@+id/tvDuration"
+            <EditText
+                android:id="@+id/etDuration"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/lblDuration"
+                android:hint="@string/lblDuration"
                 android:textSize="@dimen/default_font_size" />
 
             <TextView
@@ -75,13 +75,13 @@
                 android:labelFor="@id/etIngredients"
                 android:text="@string/lblIngredients" />
 
-            <TextView
-                android:id="@+id/tvIngredients"
+            <EditText
+                android:id="@+id/etIngredients"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="text|textMultiLine"
                 android:singleLine="false"
-                android:text="@string/lblIngredients"
+                android:hint="@string/lblIngredients"
                 android:textSize="@dimen/default_font_size" />
         </LinearLayout>
     </LinearLayout>
@@ -93,10 +93,10 @@
         android:labelFor="@id/etInstructions"
         android:text="@string/lblInstructions" />
 
-    <TextView
-        android:id="@+id/tvInstructions"
+    <EditText
+        android:id="@+id/etInstructions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/lblInstructions"
+        android:hint="@string/lblInstructions"
         android:textSize="@dimen/default_font_size" />
 </LinearLayout>
