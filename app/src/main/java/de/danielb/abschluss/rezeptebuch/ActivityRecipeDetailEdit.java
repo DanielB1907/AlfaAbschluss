@@ -1,13 +1,19 @@
 package de.danielb.abschluss.rezeptebuch;
 
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+
+import java.io.File;
 
 import de.danielb.abschluss.rezeptebuch.controller.RecipeSqliteHelper;
 import de.danielb.abschluss.rezeptebuch.model.Recipe;
@@ -16,7 +22,7 @@ import de.danielb.abschluss.rezeptebuch.model.Recipe;
  * Created by Daniel B. on 04.09.2018.
  */
 
-public class ActivityRecipeDetailEdit extends AppCompatActivity {
+public class ActivityRecipeDetailEdit extends AppCompatActivity implements View.OnClickListener {
     private static int REQUEST_NEW_RECIPE = 0x4711;
 
     private Intent intent;
@@ -25,13 +31,15 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity {
     private ImageButton ibtnImage;
 
     private RecipeSqliteHelper recipeSqliteHelper;
-    private Recipe recipe;
+    private Recipe recipe = null;
+
+    private File imageFile;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recipe_detail_edit);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         initControllers();
         connectViewControls();
@@ -40,9 +48,6 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        if(recipeSqliteHelper != null) {
-            recipeSqliteHelper.close();
-        }
     }
 
     @Override
@@ -66,14 +71,22 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.ibtnImage:
+                setImage();
+                break;
+        }
+    }
     private void initControllers() {
         recipeSqliteHelper = new RecipeSqliteHelper(getApplicationContext(), "MyRecipes.db", null, 1);
 
         intent = getIntent();
-        if(intent != null) {
-            long recipeId = intent.getLongExtra("RECIPE_ID", -1);
-            if(recipeId >= 0) {
-                recipe = recipeSqliteHelper.getRecipe(recipeId);
+        if (intent != null) {
+            long recipeId = intent.getLongExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, -1);
+            if (recipeId >= 0) {
+                recipe = recipeSqliteHelper.queryRecipeByRowid(recipeId);
             }
         }
     }
@@ -85,25 +98,70 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity {
         etIngredients = findViewById(R.id.etIngredients);
         etInstructions = findViewById(R.id.etInstructions);
         ibtnImage = findViewById(R.id.ibtnImage);
+        ibtnImage.setOnClickListener(this);
 
-        if(recipe != null) {
+    }
+
+    private void updateViews() {
+        if (recipe != null) {
             etTitle.setText(recipe.getTitle());
             etCategory.setText(recipe.getCategory());
             etDuration.setText(recipe.getDuration());
             etIngredients.setText(recipe.getIngredients());
             etInstructions.setText(recipe.getInstructions());
-            //ibtnImage.setText(recipe.getPathToImage());
+            this.imageFile = new File(recipe.getPathToImage());
+            if(imageFile.exists()) {
+                ibtnImage.setImageBitmap(BitmapFactory.decodeFile(imageFile.getAbsolutePath()));
+            }
         }
+    }
+    private void setImage() {
+        String title = "Open Photo";
+        CharSequence[] itemlist ={"Take a Photo",
+                "Pick from Gallery",
+                "Open from File"};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setIcon(android.R.drawable.sym_def_app_icon);
+        builder.setTitle(title);
+        builder.setItems(itemlist, new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                switch (which) {
+                    case 0:// Take Photo
+                        // Do Take Photo task here
+                        break;
+                    case 1:// Choose Existing Photo
+                        // Do Pick Photo task here
+                        break;
+                    case 2:// Choose Existing File
+                        // Do Pick file here
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
+        AlertDialog alert = builder.create();
+        alert.setCancelable(true);
+        alert.show();
     }
 
     private void cancelRecipe() {
-        setResult(RESULT_CANCELED);
+        if (intent == null) {
+            intent = new Intent();
+        }
+        intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE, MainActivityRecipeList.CALLBACKNOTE_NONE);
+        setResult(RESULT_CANCELED, intent);
     }
 
     private void saveRecipe() {
-        setResult(RESULT_OK);
+        if (intent == null) {
+            intent = new Intent();
+        }
 
-        if(recipe != null) {
+        if (recipe == null) {
             recipe = new Recipe(0,
                     etTitle.getText().toString(),
                     etCategory.getText().toString(),
@@ -111,13 +169,32 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity {
                     etIngredients.getText().toString(),
                     etInstructions.getText().toString(),
                     "Path");
-            if(recipe.isValid()) {
-                recipe = recipeSqliteHelper.addNewRecipe(recipe);
+            if (recipe.isValid()) {
+                recipe = recipeSqliteHelper.insertRecipe(recipe);
+                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, recipe.get_id());
+                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE, MainActivityRecipeList.CALLBACKNOTE_NEW);
+            } else {
+                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, -1);
+                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE, MainActivityRecipeList.CALLBACKNOTE_NONE);
             }
         } else {
-            if(recipe.isValid()) {
-                recipeSqliteHelper.editRecipe(recipe);
+            recipe.setTitle(etTitle.getText().toString());
+            recipe.setCategory(etCategory.getText().toString());
+            recipe.setDuration(etDuration.getText().toString());
+            recipe.setIngredients(etIngredients.getText().toString());
+            recipe.setInstructions(etInstructions.getText().toString());
+            recipe.setPathToImage("Path");
+
+            if (recipe.isValid()) {
+                recipeSqliteHelper.modifyRecipe(recipe);
+                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, recipe.get_id());
+                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE, MainActivityRecipeList.CALLBACKNOTE_UPDATE);
+            } else {
+                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, -1);
+                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE, MainActivityRecipeList.CALLBACKNOTE_NONE);
             }
         }
+        setResult(RESULT_OK, intent);
     }
+
 }

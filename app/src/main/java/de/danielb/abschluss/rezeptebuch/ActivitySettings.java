@@ -28,26 +28,9 @@ public class ActivitySettings extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-            case R.id.mnActivityList:
-                nextActivity = new Intent();
-                nextActivity.setClass(getApplicationContext(), ActivityRecipeList.class);
-                startActivity(nextActivity);
-                break;
-            case R.id.mnActivityDetail:
-                nextActivity = new Intent();
-                nextActivity.setClass(getApplicationContext(), ActivityRecipeDetail.class);
-                startActivity(nextActivity);
-                break;
-            case R.id.mnActivityEdit:
-                nextActivity = new Intent();
-                nextActivity.setClass(getApplicationContext(), ActivityRecipeDetailEdit.class);
-                startActivity(nextActivity);
-                break;
-            case R.id.mnActivitySettings:
-                nextActivity = new Intent();
-                nextActivity.setClass(getApplicationContext(), ActivitySettings.class);
-                startActivity(nextActivity);
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                finish();
                 break;
         }
         return super.onOptionsItemSelected(item);

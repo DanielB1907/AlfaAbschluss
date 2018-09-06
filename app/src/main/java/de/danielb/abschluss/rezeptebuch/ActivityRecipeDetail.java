@@ -18,6 +18,8 @@ import de.danielb.abschluss.rezeptebuch.model.Recipe;
 
 public class ActivityRecipeDetail extends AppCompatActivity {
     private Intent intent;
+    // activities
+    private Intent activityDetailEdit;
 
     private TextView tvTitle, tvCategory, tvDuration, tvIngredients, tvInstructions;
     private ImageButton ibtnImage;
@@ -33,15 +35,67 @@ public class ActivityRecipeDetail extends AppCompatActivity {
 
         initControllers();
         connectViewControls();
+
+        setResult(RESULT_CANCELED);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if(recipeSqliteHelper != null) {
-            recipeSqliteHelper.close();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK) {
+            if(data != null) {
+                String note = data.getStringExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE);
+                long rowid = data.getLongExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, -1L);
+                if(note != null && rowid >= 0) {
+                    switch (note) {
+                        case MainActivityRecipeList.CALLBACKNOTE_NEW:
+                            if(recipeSqliteHelper != null) {
+                                recipe = recipeSqliteHelper.queryRecipeByRowid(rowid);
+                                updateView();
+
+                                if (intent == null) {
+                                    intent = new Intent();
+                                }
+                                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, rowid);
+                                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE, MainActivityRecipeList.CALLBACKNOTE_NEW);
+                                setResult(RESULT_OK, intent);
+                            }
+                            break;
+                        case MainActivityRecipeList.CALLBACKNOTE_UPDATE:
+                            if(recipeSqliteHelper != null) {
+                                recipe = recipeSqliteHelper.queryRecipeByRowid(rowid);
+                                updateView();
+
+                                if (intent == null) {
+                                    intent = new Intent();
+                                }
+                                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, rowid);
+                                intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE, MainActivityRecipeList.CALLBACKNOTE_UPDATE);
+                                setResult(RESULT_OK, intent);
+                            }
+                            break;
+                        case MainActivityRecipeList.CALLBACKNOTE_DELETE:
+                            if (intent == null) {
+                                intent = new Intent();
+                            }
+                            intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, rowid);
+                            intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE, MainActivityRecipeList.CALLBACKNOTE_DELETE);
+                            setResult(RESULT_OK, intent);
+                            finish();
+                            break;
+                        case MainActivityRecipeList.CALLBACKNOTE_NONE:
+                            break;
+                    }
+                }
+            }
         }
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -56,8 +110,11 @@ public class ActivityRecipeDetail extends AppCompatActivity {
                 finish();
                 break;
             case R.id.mnActivityEdit:
+                editRecipe(recipe.get_id());
                 break;
             case R.id.mnDelete:
+                deleteRecipe(recipe.get_id());
+                finish();
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -68,9 +125,9 @@ public class ActivityRecipeDetail extends AppCompatActivity {
 
         intent = getIntent();
         if(intent != null) {
-            long recipeId = intent.getLongExtra("RECIPE_ID", -1);
+            long recipeId = intent.getLongExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, -1);
             if(recipeId >= 0) {
-                recipe = recipeSqliteHelper.getRecipe(recipeId);
+                recipe = recipeSqliteHelper.queryRecipeByRowid(recipeId);
             } else {
                 finish();
             }
@@ -85,6 +142,10 @@ public class ActivityRecipeDetail extends AppCompatActivity {
         tvInstructions = findViewById(R.id.tvInstructions);
         //ibtnImage = findViewById(R.id.ibtnImage);
 
+        updateView();
+    }
+
+    private void updateView() {
         if(recipe != null) {
             tvTitle.setText(recipe.getTitle());
             tvCategory.setText(recipe.getCategory());
@@ -94,4 +155,34 @@ public class ActivityRecipeDetail extends AppCompatActivity {
             //ibtnImage.setText(recipe.getPathToImage());
         }
     }
+
+    private void editRecipe(long rowid) {
+        //if rowid is in valid range
+        if (rowid >= 0) {
+            //make sure, the intent is instanciated only once
+            if (activityDetailEdit == null) {
+                activityDetailEdit = new Intent(getApplicationContext(), ActivityRecipeDetailEdit.class);
+            }
+            activityDetailEdit.putExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, (long) rowid);
+            activityDetailEdit.putExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE, MainActivityRecipeList.CALLBACKNOTE_UPDATE);
+
+            startActivityForResult(activityDetailEdit, MainActivityRecipeList.REQUEST_EDIT_RECIPE);
+        }
+    }
+
+    private void deleteRecipe(long rowid) {
+        //if rowid is in valid range
+        if (rowid >= 0) {
+            recipeSqliteHelper.deleteRecipeByRowid(rowid);
+
+            if(intent == null) {
+                intent = new Intent();
+            }
+
+            intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, (long) rowid);
+            intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_CALLBACKNOTE, MainActivityRecipeList.CALLBACKNOTE_DELETE);
+            setResult(RESULT_OK, intent);
+        }
+    }
+
 }

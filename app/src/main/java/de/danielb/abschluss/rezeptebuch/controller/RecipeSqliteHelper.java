@@ -7,15 +7,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.support.annotation.NonNull;
 import android.util.Log;
-import android.widget.ListAdapter;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.RecursiveAction;
 
 import de.danielb.abschluss.rezeptebuch.model.Recipe;
 
@@ -32,7 +26,7 @@ import de.danielb.abschluss.rezeptebuch.model.Recipe;
  * - only one pull query is needed at the beginning,
  * - any ListAdapter will be able to work with local list
  */
-public class RecipeSqliteHelper implements List<Recipe> {
+public class RecipeSqliteHelper {
     public static final int ACTIVITY_EDIT_RECIPE = 0x4711;
 
     private SQLiteOpenHelper sqLiteOpenHelper;
@@ -67,144 +61,10 @@ public class RecipeSqliteHelper implements List<Recipe> {
 
             }
         };
-
-        getRecipeList();
     }
-
-    //region ========List Interface
-    @Override
-    public int size() {
-        return recipeList.size();
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return recipeList.isEmpty();
-    }
-
-    @Override
-    public boolean contains(Object o) {
-        return recipeList.contains(o);
-    }
-
-    @NonNull
-    @Override
-    public Iterator<Recipe> iterator() {
-        return recipeList.iterator();
-    }
-
-    @NonNull
-    @Override
-    public Object[] toArray() {
-        return recipeList.toArray();
-    }
-
-    @NonNull
-    @Override
-    public <T> T[] toArray(@NonNull T[] a) {
-        return recipeList.toArray(a);
-    }
-
-    @Override
-    public boolean add(Recipe recipe) {
-        recipe = insertRecipe(recipe);
-        if(recipe != null) {
-            return recipeList.add(recipe);
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean remove(Object o) {
-        if(deleteRecipeByRowid(((Recipe) o).get_id())) {
-            return recipeList.remove(o);
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean containsAll(@NonNull Collection<?> c) {
-        return recipeList.containsAll(c);
-    }
-
-    @Override
-    public boolean addAll(@NonNull Collection<? extends Recipe> c) {
-        return recipeList.addAll(c);
-    }
-
-    @Override
-    public boolean addAll(int index, @NonNull Collection<? extends Recipe> c) {
-        return recipeList.addAll(index, c);
-    }
-
-    @Override
-    public boolean removeAll(@NonNull Collection<?> c) {
-        return recipeList.removeAll(c);
-    }
-
-    @Override
-    public boolean retainAll(@NonNull Collection<?> c) {
-        return recipeList.retainAll(c);
-    }
-
-    @Override
-    public void clear() {
-        recipeList.clear();
-    }
-
-    @Override
-    public Recipe get(int index) {
-        return recipeList.get(index);
-    }
-
-    @Override
-    public Recipe set(int index, Recipe element) {
-        return recipeList.set(index, element);
-    }
-
-    @Override
-    public void add(int index, Recipe element) {
-        //recipeSqliteHelper.add(index, element);
-    }
-
-    @Override
-    public Recipe remove(int index) {
-        return recipeList.remove(index);
-    }
-
-    @Override
-    public int indexOf(Object o) {
-        return recipeList.indexOf(o);
-    }
-
-    @Override
-    public int lastIndexOf(Object o) {
-        return recipeList.lastIndexOf(o);
-    }
-
-    @NonNull
-    @Override
-    public ListIterator<Recipe> listIterator() {
-        return recipeList.listIterator();
-    }
-
-    @NonNull
-    @Override
-    public ListIterator<Recipe> listIterator(int index) {
-        return recipeList.listIterator(index);
-    }
-
-    @NonNull
-    @Override
-    public List<Recipe> subList(int fromIndex, int toIndex) {
-        return recipeList.subList(fromIndex, toIndex);
-    }
-    //endregion
 
     //region =========Sqlite Commands
-    //generates table description based on the class fields  TODO: using reflections in future
+    //generates table description based on the class fields
     private void generateSqlStrings() {
         sqlTableName = "Recipes";
         sqlTableDesc = "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -233,7 +93,7 @@ public class RecipeSqliteHelper implements List<Recipe> {
      * @param recipe
      * @return
      */
-    private Recipe insertRecipe(@NonNull Recipe recipe) {
+    public Recipe insertRecipe(@NonNull Recipe recipe) {
         //get write access
         SQLiteDatabase sqLiteDatabase = this.sqLiteOpenHelper.getWritableDatabase();
 
@@ -257,11 +117,16 @@ public class RecipeSqliteHelper implements List<Recipe> {
                 recipe = null;
             }
         }
+
+        if(recipe != null && recipeList != null) {
+            refreshNew(recipe.get_id());
+        }
+
         //returns current recipe with new rowid or null
         return recipe;
     }
 
-    public boolean modifyRecipe(Recipe recipe) {
+    public boolean modifyRecipe(@NonNull Recipe recipe) {
         //prepare write access
         SQLiteDatabase sqLiteDatabase = this.sqLiteOpenHelper.getWritableDatabase();
         int result = -1;
@@ -282,7 +147,7 @@ public class RecipeSqliteHelper implements List<Recipe> {
         return result == 1;
     }
 
-    private boolean deleteRecipeByRowid(long rowid) {
+    public boolean deleteRecipeByRowid(long rowid) {
         //prepare write access
         SQLiteDatabase sqLiteDatabase = this.sqLiteOpenHelper.getWritableDatabase();
 
@@ -290,10 +155,14 @@ public class RecipeSqliteHelper implements List<Recipe> {
         int result = sqLiteDatabase.delete(sqlTableName, sqlTableFields[0] + "=" + rowid, null);
 
         //if one item was successfully deleted, true
-        return result >= 1;
+        if(result >= 1 && recipeList != null) {
+            return refreshDelete(rowid);
+        } else {
+            return false;
+        }
     }
 
-    private Recipe getRecipeByRowid(long rowid) {
+    public Recipe queryRecipeByRowid(long rowid) {
         //prepare readonly access
         SQLiteDatabase sqLiteDatabase = this.sqLiteOpenHelper.getReadableDatabase();
 
@@ -313,25 +182,24 @@ public class RecipeSqliteHelper implements List<Recipe> {
                     cursor.getString(cursor.getColumnIndexOrThrow(sqlTableFields[5].trim())), //Instructions
                     cursor.getString(cursor.getColumnIndexOrThrow(sqlTableFields[6].trim()))); //PathToImage
         }
-
         //returns recipe or null
         return recipe;
     }
 
-    private List<Recipe> getRecipeList() {
+    public List<Recipe> getRecipeList() {
         if (this.recipeList == null) {
-            refreshRecipeList();
+            queryRecipeList();
         }
         return this.recipeList;
     }
 
     /**
-     * refreshRecipeList is destructive!
+     * queryRecipeList is destructive!
      * locally cached list will be deleted, if existing.
      *
      * @return
      */
-    private List<Recipe> refreshRecipeList() {
+    private List<Recipe> queryRecipeList() {
         SQLiteDatabase sqLiteDatabase = sqLiteOpenHelper.getReadableDatabase();
 
         //prepare empty List
@@ -356,6 +224,62 @@ public class RecipeSqliteHelper implements List<Recipe> {
             this.recipeList.add(currentRecipe);
         }
         return this.recipeList;
+    }
+
+    //======= Handle on local list only
+    public void refreshNew(long rowid) {
+        Recipe recipe = queryRecipeByRowid(rowid);
+
+        if(recipe != null && recipeList != null) {
+            if(findRecipeByRowid(recipe.get_id()) == null) {
+                recipeList.add(recipe);
+            }
+        }
+    }
+
+    public void refreshOld(long rowid) {
+        Recipe recipe = queryRecipeByRowid(rowid);
+
+        if(recipe != null  && recipeList != null) {
+            Recipe oldRecipe = findRecipeByRowid(rowid);
+            if(oldRecipe != null) {
+                if(oldRecipe.get_id() == recipe.get_id()) {
+                    oldRecipe.setTitle(recipe.getTitle());
+                    oldRecipe.setCategory(recipe.getCategory());
+                    oldRecipe.setDuration(recipe.getDuration());
+                    oldRecipe.setIngredients(recipe.getIngredients());
+                    oldRecipe.setInstructions(recipe.getInstructions());
+                    oldRecipe.setPathToImage(recipe.getPathToImage());
+                }
+            }
+        }
+    }
+
+    public boolean refreshDelete(long rowid) {
+        boolean success = false;
+        Recipe recipe = queryRecipeByRowid(rowid);
+
+        //if deletion is valid in database, result should be null
+        if(recipe == null && recipeList != null) {
+            //find recipe in local list and validate deletion
+            Recipe oldRecipe = findRecipeByRowid(rowid);
+            if (oldRecipe != null) {
+                success = recipeList.remove(oldRecipe);
+            }
+        }
+        return success;
+    }
+
+    public Recipe findRecipeByRowid(long rowid) {
+        Recipe recipe = null;
+
+        for (Recipe r : recipeList) {
+            if(r.get_id() == rowid) {
+                recipe = r;
+                break;
+            }
+        }
+        return recipe;
     }
     //endregion
 

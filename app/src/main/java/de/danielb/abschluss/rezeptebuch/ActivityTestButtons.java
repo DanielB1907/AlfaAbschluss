@@ -49,7 +49,7 @@ public class ActivityTestButtons extends AppCompatActivity implements View.OnCli
                                 "Instructions " + i,
                                 "PathToImage " + i);
 
-                        Log.d(this.getClass().getSimpleName(), recipeSqliteHelper.addNewRecipe(recipe).toString());
+                        Log.d(this.getClass().getSimpleName(), recipeSqliteHelper.insertRecipe(recipe).toString());
                     }
                 }
                 break;
