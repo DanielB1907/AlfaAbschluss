@@ -32,6 +32,11 @@ public class Recipe {
                 (this.instructions != null && !this.instructions.isEmpty()) &&
                 (this.pathToImage != null && !this.pathToImage.isEmpty());
     }
+
+    public void setId(long id) {
+        this._id = id;
+    }
+
     public void setTitle(String title) {
         this.title = title;
     }
@@ -95,4 +100,6 @@ public class Recipe {
                 "pathToImage:" + pathToImage + "\n" +
                 super.toString();
     }
+
+
 }

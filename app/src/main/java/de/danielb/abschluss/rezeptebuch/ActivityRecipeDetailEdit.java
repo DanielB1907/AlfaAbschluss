@@ -9,7 +9,6 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.ImageButton;
 
-import de.danielb.abschluss.rezeptebuch.controller.RecipeAdapter;
 import de.danielb.abschluss.rezeptebuch.controller.RecipeSqliteHelper;
 import de.danielb.abschluss.rezeptebuch.model.Recipe;
 
