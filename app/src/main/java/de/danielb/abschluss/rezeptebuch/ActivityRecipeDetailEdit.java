@@ -1,11 +1,11 @@
 package de.danielb.abschluss.rezeptebuch;
 
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,6 +14,8 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 import de.danielb.abschluss.rezeptebuch.controller.RecipeSqliteHelper;
 import de.danielb.abschluss.rezeptebuch.model.Recipe;
@@ -23,7 +25,7 @@ import de.danielb.abschluss.rezeptebuch.model.Recipe;
  */
 
 public class ActivityRecipeDetailEdit extends AppCompatActivity implements View.OnClickListener {
-    private static int REQUEST_NEW_RECIPE = 0x4711;
+    private static final int REQUEST_IMAGE = 0x4714;
 
     private Intent intent;
 
@@ -33,7 +35,7 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity implements View.
     private RecipeSqliteHelper recipeSqliteHelper;
     private Recipe recipe = null;
 
-    private File imageFile;
+    private String pathToImageFile;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -48,6 +50,16 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity implements View.
     @Override
     protected void onStop() {
         super.onStop();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_IMAGE && resultCode == RESULT_OK) {
+            Bitmap thumbnail = data.getParcelableExtra("data");
+            Uri fullPhotoUri = data.getData();
+            this.pathToImageFile = fullPhotoUri.toString();
+            updateImageButton();
+        }
     }
 
     @Override
@@ -75,7 +87,7 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity implements View.
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.ibtnImage:
-                setImage();
+                selectImageAction();
                 break;
         }
     }
@@ -99,7 +111,7 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity implements View.
         etInstructions = findViewById(R.id.etInstructions);
         ibtnImage = findViewById(R.id.ibtnImage);
         ibtnImage.setOnClickListener(this);
-
+        updateViews();
     }
 
     private void updateViews() {
@@ -109,43 +121,27 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity implements View.
             etDuration.setText(recipe.getDuration());
             etIngredients.setText(recipe.getIngredients());
             etInstructions.setText(recipe.getInstructions());
-            this.imageFile = new File(recipe.getPathToImage());
-            if(imageFile.exists()) {
-                ibtnImage.setImageBitmap(BitmapFactory.decodeFile(imageFile.getAbsolutePath()));
-            }
+            this.pathToImageFile = recipe.getPathToImage();
+            updateImageButton();
         }
     }
-    private void setImage() {
-        String title = "Open Photo";
-        CharSequence[] itemlist ={"Take a Photo",
-                "Pick from Gallery",
-                "Open from File"};
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setIcon(android.R.drawable.sym_def_app_icon);
-        builder.setTitle(title);
-        builder.setItems(itemlist, new DialogInterface.OnClickListener() {
+    public void selectImageAction() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(intent, REQUEST_IMAGE);
+        }
+    }
 
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                switch (which) {
-                    case 0:// Take Photo
-                        // Do Take Photo task here
-                        break;
-                    case 1:// Choose Existing Photo
-                        // Do Pick Photo task here
-                        break;
-                    case 2:// Choose Existing File
-                        // Do Pick file here
-                        break;
-                    default:
-                        break;
-                }
-            }
-        });
-        AlertDialog alert = builder.create();
-        alert.setCancelable(true);
-        alert.show();
+    private void updateImageButton() {
+        try {
+            InputStream inStream = getContentResolver().openInputStream(Uri.parse(this.pathToImageFile));
+            Bitmap bitmap = BitmapFactory.decodeStream(inStream);
+            ibtnImage.setImageBitmap(bitmap);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     private void cancelRecipe() {
@@ -168,7 +164,7 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity implements View.
                     etDuration.getText().toString(),
                     etIngredients.getText().toString(),
                     etInstructions.getText().toString(),
-                    "Path");
+                    !this.pathToImageFile.isEmpty() ? this.pathToImageFile : "noImage");
             if (recipe.isValid()) {
                 recipe = recipeSqliteHelper.insertRecipe(recipe);
                 intent.putExtra(MainActivityRecipeList.EXTRA_RECIPE_ROWID, recipe.get_id());
@@ -183,7 +179,7 @@ public class ActivityRecipeDetailEdit extends AppCompatActivity implements View.
             recipe.setDuration(etDuration.getText().toString());
             recipe.setIngredients(etIngredients.getText().toString());
             recipe.setInstructions(etInstructions.getText().toString());
-            recipe.setPathToImage("Path");
+            recipe.setPathToImage(!this.pathToImageFile.isEmpty() ? this.pathToImageFile : "noImage");
 
             if (recipe.isValid()) {
                 recipeSqliteHelper.modifyRecipe(recipe);

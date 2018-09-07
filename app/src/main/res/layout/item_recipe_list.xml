@@ -21,11 +21,11 @@
         android:layout_width="0dp"
         android:layout_height="50dp"
         android:layout_weight="1"
-        android:elevation="0dp"
 
+        android:elevation="0dp"
         android:focusable="false"
         android:focusableInTouchMode="false"
-        android:tint="@color/colorPrimary"
+        android:scaleType="fitCenter"
         app:srcCompat="@drawable/ic_menu_gallery" />
 
     <LinearLayout

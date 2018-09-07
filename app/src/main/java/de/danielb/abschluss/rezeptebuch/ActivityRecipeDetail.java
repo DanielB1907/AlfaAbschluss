@@ -1,6 +1,9 @@
 package de.danielb.abschluss.rezeptebuch;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -8,6 +11,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageButton;
 import android.widget.TextView;
+
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 import de.danielb.abschluss.rezeptebuch.controller.RecipeSqliteHelper;
 import de.danielb.abschluss.rezeptebuch.model.Recipe;
@@ -140,7 +146,7 @@ public class ActivityRecipeDetail extends AppCompatActivity {
         tvDuration = findViewById(R.id.tvDuration);
         tvIngredients = findViewById(R.id.tvIngredients);
         tvInstructions = findViewById(R.id.tvInstructions);
-        //ibtnImage = findViewById(R.id.ibtnImage);
+        ibtnImage = findViewById(R.id.ibtnImage);
 
         updateView();
     }
@@ -152,7 +158,17 @@ public class ActivityRecipeDetail extends AppCompatActivity {
             tvDuration.setText(recipe.getDuration());
             tvIngredients.setText(recipe.getIngredients());
             tvInstructions.setText(recipe.getInstructions());
-            //ibtnImage.setText(recipe.getPathToImage());
+            updateImageButton();
+        }
+    }
+
+    private void updateImageButton() {
+        try {
+            InputStream inStream = getContentResolver().openInputStream(Uri.parse(this.recipe.getPathToImage()));
+            Bitmap bitmap = BitmapFactory.decodeStream(inStream);
+            ibtnImage.setImageBitmap(bitmap);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
     }
 
